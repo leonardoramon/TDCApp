@@ -1,0 +1,162 @@
+public Vector3 leapTapPosition; // posição do tap pelo Leap
+ public Vector3 unityTapPosition; // posição convertida para game world
+ Leap.Controller controller; // objeto controller do Leap
+ Leap.Listener listener; // listener para eventos do Leap
+ GameObject pointer; // cópia de ponteiro na tela
+
+ // variáveis de controle da sensibilidade
+ float x = 0;
+ float y = 0;
+ float z = 0;
+ float k = 0.25f;
+ 
+ // função de setup do Leap 
+ private void SetupLeap()
+ {
+        controller = new Leap.Controller();
+        listener = new Leap.Listener();
+        controller.AddListener(listener);
+        controller.EnableGesture(Leap.Gesture.GestureType.TYPESCREENTAP);
+        controller.Config.SetFloat("Gesture.ScreenTap.MinForwardVelocity", 30.0f);
+        controller.Config.SetFloat("Gesture.ScreenTap.HistorySeconds", .5f);
+        controller.Config.SetFloat("Gesture.ScreenTap.MinDistance", 1.0f);
+        controller.Config.Save();
+
+        pointer = GameObject.FindGameObjectWithTag("Pointer");
+ }
+	
+// funções para converter coordenadas
+public static Vector3 ToUnity(Leap.Vector v)
+    {
+        return FlippedZ(v);
+    }
+
+    private static Vector3 FlippedZ(Leap.Vector v)
+    {
+        return new Vector3(v.x, v.y, -v.z);
+    }
+	
+// Dentro do método Update da Unity (classe Game)
+
+// Guardar frame do controller 
+Leap.Frame frame = controller.Frame();
+// Armazena o dedo mais próximo a tela 
+Leap.Finger finger = frame.Fingers.Frontmost;
+// Estabiliza a posição onde o dedo está 
+Leap.Vector stabilizedPosition = finger.StabilizedTipPosition;
+
+// Cria uma caixa interativa 
+Leap.InteractionBox ibox = controller.Frame().InteractionBox;
+
+// Normaliza e converte posição
+Leap.Vector normalizedPosition = ibox.NormalizePoint(stabilizedPosition);
+float x = normalizedPosition.x * Screen.width;
+float y = /*Screen.height -*/ normalizedPosition.y * Screen.height;
+leapTapPosition = new Vector3(x, y);
+
+// Valida se a posição em que o dedo tocou a tela via Leap está dentro da tela 
+ if(leapTapPosition.x > 0 && leapTapPosition.x < Screen.width && leapTapPosition.y > 0 && leapTapPosition.y < Screen.height)
+        {
+            if (!shape.completed)
+                brightEffect.GetComponent<ParticleEmitter>().emit = true;
+
+			// Calcula colisão de letras com a posição x,y do dedo 
+            hit2d = Physics2D.Raycast(GetCurrentPlatformClickPosition(Camera.main), Vector2.zero);
+            if (hit2d.collider != null)
+            {
+                if (hit2d.transform.tag == "Start")
+                {
+                    OnStartHitCollider(hit2d);
+                    shape.CancelInvoke();
+                    shape.DisableTracingHand();
+                    EnableHand();
+                }
+                else if (hit2d.transform.tag == "Collider")
+                {
+                    shape.DisableTracingHand();
+                    EnableHand();
+                }
+            }
+        }
+        else
+        {
+			// Gesto inválido, então invalidamos a pintura do caracter, o ponteiro e o caminho desenhado
+            Debug.Log("Gesto Inválido.");
+            brightEffect.GetComponent<ParticleEmitter>().emit = false;
+            DisableHand();
+            shape.Invoke("EnableTracingHand", 1);
+            ResetPath();
+        }
+		
+// A mesma função dentor de update mas para cada gesto tratado
+foreach (Leap.Gesture gesture in frame.Gestures())
+        {
+            switch (gesture.Type)
+            {
+                case (Leap.Gesture.GestureType.TYPECIRCLE):
+                    {
+                        Debug.Log("Circle gesture recognized.");
+                        break;
+                    }
+                case (Leap.Gesture.GestureType.TYPEINVALID):
+                    {
+                        Debug.Log("Gesto Inválido!");
+                        brightEffect.GetComponent<ParticleEmitter>().emit = false;
+                        DisableHand();
+                        shape.Invoke("EnableTracingHand", 1);
+                        ResetPath();
+                        break;
+                    }
+                case (Leap.Gesture.GestureType.TYPEKEYTAP):
+                    {
+                        Debug.Log("Gesto de KeyTap");
+                        break;
+                    }
+                case (Leap.Gesture.GestureType.TYPESCREENTAP):
+                    {
+                        Debug.Log("Gesto de ScreenTap.");
+
+						// Criando um gesto de tap e convertendo coordenada
+                        Leap.ScreenTapGesture tap = new Leap.ScreenTapGesture(gesture);
+                        leapTapPosition = Leap.UnityVectorExtension.ToUnity(tap.Position);//ToUnity(tap.Position);
+                     
+                        if (!shape.completed)
+                            brightEffect.GetComponent<ParticleEmitter>().emit = true;
+
+                        hit2d = Physics2D.Raycast(GetCurrentPlatformClickPosition(Camera.main), Vector2.zero);
+                        if (hit2d.collider != null)
+                        {
+                            if (hit2d.transform.tag == "Start")
+                            {
+                                OnStartHitCollider(hit2d);
+                                shape.CancelInvoke();
+                                shape.DisableTracingHand();
+                                EnableHand();
+                            }
+                            else if (hit2d.transform.tag == "Collider")
+                            {
+                                shape.DisableTracingHand();
+                                EnableHand();
+                            }
+                        }
+
+                        break;
+                    }
+                case (Leap.Gesture.GestureType.TYPESWIPE):
+                    {
+                        Debug.Log("Gesto de swipe.");
+                        break;
+                    }
+                default:
+                    {
+                        break;
+                    }
+            }
+        }
+
+		
+// Ajuste para pintar o caractere (função de Fill())
+ fillAmount = Mathf.Abs(angle / 360.0f);
+ //fillAmount = 1; // habilitar para teste imediato
+pathFillImage.fillAmount = fillAmount;
+CheckPathComplete();

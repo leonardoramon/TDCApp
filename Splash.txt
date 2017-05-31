@@ -1,0 +1,56 @@
+using UnityEngine;
+using System.Collections;
+using Leap;
+using UnityEngine.SceneManagement;
+
+[DisallowMultipleComponent]
+public class Logo : MonoBehaviour
+{
+	public float sleepTime = 5;
+
+	public string nextSceneName;
+
+    public GameObject detect;
+    public GameObject logo;
+    Leap.Controller controller;
+
+    bool alreadyFail = false;
+
+	void Start ()
+	{
+        controller = new Leap.Controller();
+        detect.GetComponent<SpriteRenderer>().enabled = false;
+        logo.GetComponent<SpriteRenderer>().enabled = false;
+       
+        Invoke ("LoadScene", sleepTime);
+	}
+
+    private void LoadScene()
+    {
+        if (string.IsNullOrEmpty(nextSceneName)) {
+            return;
+        }
+
+        if (controller.IsConnected) {
+            detect.GetComponent<SpriteRenderer>().enabled = false;
+            logo.GetComponent<SpriteRenderer>().enabled = false;
+            SceneManager.LoadScene(nextSceneName);
+        }
+	}
+
+    void Update()
+    {
+        if (!controller.IsConnected)
+        {
+            alreadyFail = true;
+            detect.GetComponent<SpriteRenderer>().enabled = true;
+            logo.GetComponent<SpriteRenderer>().enabled = true;
+        }
+        else if(controller.IsConnected && alreadyFail)
+        {
+            detect.GetComponent<SpriteRenderer>().enabled = false;
+            logo.GetComponent<SpriteRenderer>().enabled = false;
+            Invoke("LoadScene", sleepTime);
+        }
+    }
+}

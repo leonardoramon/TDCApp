@@ -1,0 +1,23 @@
+﻿//Alterações - ScrollSlider
+ 
+public GameObject hand; // Referência para mão
+private HandPointer handScript; // Referência para script da mão 
+private RaycastHit2D hit2d; // Raycasting para botões 
+
+ // Checa novas colisões Leap + UI 
+ void CheckCollisions()
+    {
+        if(handScript.collisionWithNextButton)
+        {
+            Debug.Log("Colidindo com Next Button");
+            handScript.collisionWithNextButton = false;
+            NextGroup();
+        }
+
+        if (handScript.collisionWithPreviousButton)
+        {
+            Debug.Log("Colidindo com Previous Button");
+            handScript.collisionWithPreviousButton = false;
+            PreviousGroup();
+        }
+    }

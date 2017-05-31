@@ -1,0 +1,85 @@
+LEAP MANAGER - FINAL
+
+using System.Collections;
+using System.Collections.Generic;
+using UnityEngine;
+
+public class LeapManager : MonoBehaviour
+{
+    Vector3 mousePosition;
+
+    public Vector3 leapPosition;
+    public Vector3 unityTapPosition;
+    Leap.Controller controller;
+    Leap.Listener listener;
+
+    public GameObject hand;
+
+    public float speed = 0.1f;
+
+    void Start()
+    {
+        SetupLeap();
+    }
+
+    private void SetupLeap()
+    {
+        controller = new Leap.Controller();
+        listener = new Leap.Listener();
+        controller.AddListener(listener);
+        controller.EnableGesture(Leap.Gesture.GestureType.TYPESCREENTAP);
+        controller.Config.SetFloat("Gesture.ScreenTap.MinForwardVelocity", 30.0f);
+        controller.Config.SetFloat("Gesture.ScreenTap.HistorySeconds", .5f);
+        controller.Config.SetFloat("Gesture.ScreenTap.MinDistance", 1.0f);
+        controller.Config.Save();
+    }
+
+    public static Vector3 ToUnity(Leap.Vector v)
+    {
+        return FlippedZ(v);
+    }
+
+    private static Vector3 FlippedZ(Leap.Vector v)
+    {
+        return new Vector3(v.x, v.y, -v.z);
+    } 
+
+    private void CheckBounds()
+    {
+        if (hand.transform.position.x <= -6.5f)
+        {
+            hand.transform.position = new Vector2(-6.5f, hand.transform.position.y);
+        }
+        else if (hand.transform.position.x >= 6.5f)
+        {
+            hand.transform.position = new Vector2(6.5f, hand.transform.position.y);
+        }
+
+        if (transform.position.y >= 0.3f)
+        {
+            hand.transform.position = new Vector2(transform.position.x, 0.3f);
+        }
+    }
+
+    void Update()
+    {
+        Leap.Frame frame = controller.Frame();
+        Leap.Finger finger = frame.Fingers.Frontmost;
+        Leap.Vector stabilizedPosition = finger.StabilizedTipPosition;
+
+        Leap.InteractionBox ibox = controller.Frame().InteractionBox;
+        Leap.Vector normalizedPosition = ibox.NormalizePoint(stabilizedPosition);
+        float x = normalizedPosition.x * Screen.width;
+        float y = normalizedPosition.y * Screen.height;
+        leapPosition = new Vector3(x, y);
+
+        Vector2 position = Camera.main.ScreenToWorldPoint(leapPosition);
+
+        mousePosition = Input.mousePosition;
+        mousePosition = Camera.main.ScreenToWorldPoint(mousePosition);
+
+        hand.transform.position = Vector2.Lerp(hand.transform.position, position, speed);
+
+        CheckBounds();
+    }
+}

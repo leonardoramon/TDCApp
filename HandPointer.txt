@@ -1,0 +1,33 @@
+﻿/*******
+** ALBUM
+*******/
+
+// Adicionar funcionalidade na UI (via Editor)
+//1 - Adicionar BoxCollider2D nos botões
+//2 - Adicionar Rigibody2D nos botões
+//3 - Implementação de nova classe HandPointer
+
+using System.Collections;
+using System.Collections.Generic;
+using UnityEngine;
+
+public class HandPointer : MonoBehaviour
+{
+    public bool collisionWithNextButton = false;
+    public bool collisionWithPreviousButton = false;
+
+    private void OnCollisionEnter2D(Collision2D collision)
+    {
+        if(collision.gameObject.name == "NextButton")
+        {
+            collisionWithNextButton = true;
+        }
+
+        if (collision.gameObject.name == "PreviousButton")
+        {
+            collisionWithPreviousButton = true;
+        }
+    }
+}
+
+
